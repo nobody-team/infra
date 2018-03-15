@@ -3,6 +3,9 @@ for entry in `find . -name "*.py" -type f`
 do
   echo "$entry"
   python "$entry"
+  if [ "$?" -eq '1' ]; then 
+    exit 1
+  fi;
 done
 
-exec "$@"
+exit 0
