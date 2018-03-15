@@ -1,5 +1,7 @@
 FROM ubuntu
 
+# Need to run with `--privileged` for `docker run`
+
 LABEL apps="GIT, MAVEN, Python.7, Selenium, google chrome, firefox"
 LABEL maintainer="nobodyhub@gmail.com"
 
@@ -47,7 +49,7 @@ RUN pip install pyvirtualdisplay
 RUN pip install xvfbwrapper
 
 #
-# install google driver, need to run with `--privileged` for `docker run`
+# install google driver
 # google-chrome need to run in a non-super user
 #
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
