@@ -29,3 +29,6 @@ Following combinations are proved to work:
 |Firefox 53.0.3|v0.18.0|3.11.0|
 |IE 11.09600.18920|3.5.1.0|3.11.0|
 |Chrome 65.0.3325.162|2.36.540470|3.11.0|
+
+### Chrome missing or invalid 'entry.level' Error
+Caused by the version dismatch of google-chrome and chromedriver
