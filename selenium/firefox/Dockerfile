@@ -2,7 +2,7 @@ FROM ubuntu
 
 # Need to run with `--privileged` for `docker run`
 
-LABEL apps="GIT, MAVEN, Python.7, Selenium, google chrome, firefox"
+LABEL apps="Git, Maven, Python2.7, Selenium, Firefox"
 LABEL maintainer="nobodyhub@gmail.com"
 
 #
@@ -50,23 +50,6 @@ RUN pip install pyvirtualdisplay
 RUN pip install xvfbwrapper
 
 #
-# install google driver
-# google-chrome need to run in a non-super user
-#
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-RUN echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list
-RUN apt-get update
-RUN apt-get install -y google-chrome-stable \
-                       libxi6 \
-                       libgconf-2-4
-
-RUN curl -O http://chromedriver.storage.googleapis.com/2.36/chromedriver_linux64.zip
-RUN unzip chromedriver_linux64.zip
-RUN chmod +x chromedriver
-RUN mv chromedriver /usr/bin
-RUN rm chromedriver_linux64.zip
-
-#
 # install firefox
 #
 RUN apt-get install -y firefox 
@@ -82,8 +65,6 @@ RUN rm geckodriver-v0.18.0-linux64.tar.gz
 ADD ./ ./
 RUN find . -type f
 RUN chmod a+x ./entry-shell.sh
-RUN useradd -m -p selenium -s /bin/bash selenium
-# USER selenium # google-chrome running as root without --no-sandbox is not supported.
 RUN pwd
 RUN echo $PATH
 #ENTRYPOINT ["/workspace/entry-shell.sh"]
