@@ -4,7 +4,7 @@
 3. Following files should be generated
     * `test.py`:  `%hub_url%` replaced with the given parameter
     * `test.py.origin`: the copy of original `test.py`
-    * `test_{BROWSER}.py`: the version for BROWSER with `test.py`, e.g., `test_CHROME.py`
+    * `test_{BROWSER}.py`: `%target_browser%` replaced with BROWSER as for `test.py`, e.g., `test_CHROME.py`
     
 ## Before Docker Build
 * Reset `test.py` to its original version in `test.py.origin`
@@ -13,7 +13,7 @@
     ```bash
     #    python ${browser_specific_file}
     #    rm ${browser_specific_file}
-    #  mv ${entry}.origin ${entry}
+    #    mv ${entry}.origin ${entry}
     ```
 * Uncomment Dockerfile
     ```
