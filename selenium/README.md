@@ -26,7 +26,7 @@ Similar errors include:
  
 **Solution**: 
 `Enable Protected Mode` for IE and **restart operation system**.
-![ie-setting](ie-settings.png)
+![ie-setting](imgs/ie-settings.png)
 
 ### Firefox no furtuer operation after start
 Possibly caused by a mismatch of driver version and Firefox version.
