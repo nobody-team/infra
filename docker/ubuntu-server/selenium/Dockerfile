@@ -27,7 +27,8 @@ RUN apt-get install -y \
                     debconf-utils \
                     unzip \
                     vim \
-                    wget
+                    wget \
+                    openssh-server
 #
 # install applications
 # 
@@ -59,7 +60,7 @@ RUN apt-get install -y google-chrome-stable \
                        libxi6 \
                        libgconf-2-4
 
-RUN curl -O http://chromedriver.storage.googleapis.com/2.24/chromedriver_linux64.zip
+RUN curl -O http://chromedriver.storage.googleapis.com/2.36/chromedriver_linux64.zip
 RUN unzip chromedriver_linux64.zip
 RUN chmod +x chromedriver
 RUN mv chromedriver /usr/bin
@@ -82,7 +83,7 @@ ADD ./ ./
 RUN find . -type f
 RUN chmod a+x ./entry-shell.sh
 RUN useradd -m -p selenium -s /bin/bash selenium
-USER selenium
+# USER selenium # google-chrome running as root without --no-sandbox is not supported.
 RUN pwd
 RUN echo $PATH
-ENTRYPOINT ["/workspace/entry-shell.sh"]
+#ENTRYPOINT ["/workspace/entry-shell.sh"]
