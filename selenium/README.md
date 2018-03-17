@@ -1,9 +1,11 @@
-# WebDriver
+# UI Automation Testing with Selenium 
 
 ## Doc
-1. Official Doc: http://selenium-python.readthedocs.io/index.html
+* []Official Doc](http://selenium-python.readthedocs.io/index.html)
 
 ## Download 
+
+### WebDriver
 
 |Browser|Download|
 |:-----:|:------:|
@@ -12,9 +14,15 @@
 |Internet Explorer|https://github.com/SeleniumHQ/selenium/wiki/InternetExplorerDriver|
 |Selenium-Standalone|https://www.seleniumhq.org/download/|
 
-## Standalone Server
+### Standalone Server
+https://www.seleniumhq.org/download/
 
-> 
+## Standalone Server
+For cross-browser test, it is suggested to work with selenium standalone server.
+
+The standalone server itself can work in a single-server mode or as selenium grid.
+
+For basic setups, please refer to: http://selenium-python.readthedocs.io/getting-started.html#using-selenium-with-remote-webdriver
 
 ## Trouble Shooting
 ### Connection to IE browser

@@ -7,11 +7,11 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
-class TestIE(unittest.TestCase):
+class TestChrome(unittest.TestCase):
     def setUp(self):
         self.driver = webdriver.Remote(
-            command_executor='http://127.0.0.1:4444/wd/hub',
-            desired_capabilities=DesiredCapabilities.INTERNETEXPLORER)
+            command_executor='%hub_url%',
+            desired_capabilities=DesiredCapabilities.%target_browser%)
         self.driver.implicitly_wait(30)
         self.base_url = "https://github.com/"
         self.verificationErrors = []
@@ -65,3 +65,5 @@ class TestIE(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
