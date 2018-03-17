@@ -1,5 +1,8 @@
 # WebDriver
 
+## Doc
+1. Official Doc: http://selenium-python.readthedocs.io/index.html
+
 ## Download 
 
 |Browser|Download|
@@ -7,6 +10,11 @@
 |Chrome|https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver|
 |Firefox|https://github.com/mozilla/geckodriver/releases|
 |Internet Explorer|https://github.com/SeleniumHQ/selenium/wiki/InternetExplorerDriver|
+|Selenium-Standalone|https://www.seleniumhq.org/download/|
+
+## Standalone Server
+
+> 
 
 ## Trouble Shooting
 ### Connection to IE browser
