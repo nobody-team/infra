@@ -46,6 +46,7 @@ RUN pip install --upgrade pip
 RUN pip install selenium
 RUN pip install pyvirtualdisplay
 RUN pip install xvfbwrapper
+RUN pip install jproperties
 
 #
 # prepare the contents
