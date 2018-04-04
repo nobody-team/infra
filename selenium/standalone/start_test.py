@@ -67,7 +67,7 @@ def execute_test(filepath):
 
 
 if __name__ == "__main__":
-    for root_dir, dirs, files in os.walk("../../SCENARIOS/"):
+    for root_dir, dirs, files in os.walk("check/"):
         for test_file in files:
             # print(test_file)
             if test_file.endswith(".py"):
