@@ -54,6 +54,7 @@ installc.exe -log install.log -acceptLicense
 **If there is an existing response file, the step can be skipped.** 
 ```commandline
 cd C:\Program Files\IBM\Installation Manager\eclipse
+IBMIM.exe -record WASv85.install.Win64.xml -skipInstall agentData
 ```
 
 
