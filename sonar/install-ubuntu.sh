@@ -42,13 +42,15 @@ createuser sonar
 psql
 # update password for DB user sonar
 ALTER USER sonar WITH ENCRYPTED password 'sonar';
+CREATE DATABASE sonar OWNER sonar;
 \q
 
 #
 # Download SonarQube
 #
+#change back user from postgres
 wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-6.4.zip
-apt-get -y install unzip
+sudo apt-get -y install unzip
 sudo unzip sonarqube-6.4.zip -d /opt
 sudo mv /opt/sonarqube-6.4 /opt/sonarqube
 
@@ -64,10 +66,10 @@ sudo mv /opt/sonarqube-6.4 /opt/sonarqube
 #```
 
 #
-# Configure Systemd service
+# Add Systemd service
 #
 
-#vi /etc/systemd/system/sonar.service
+#sudo vi /etc/systemd/system/sonar.service
 #```
 #[Unit]
 #Description=SonarQube service
