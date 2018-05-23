@@ -150,6 +150,19 @@ for root, dirs, files in os.walk('.'):
 ```
 
 ## Trouble Shooting
+#### ORA-01652: unable to extend temp segment by 129 in tablespace TEMP
+```
+create temporary tablespace TEMP2 tempfile 'C:\COMPANY_SERVERS\CJKDB\SINGAPORE\ORADATA\SINGA\TEMPSINGA2.DBF' size 32G autoextend on;
 
+alter database default temporary tablespace TEMP2;
+```
+
+#### ORA-08177 can't serialize access for this transaction
+change the transaction setting in `ora2pg_dist.conf`
+
+
+#### Can't call method "do" on an undefined value at C:/Perl64/site/lib/Ora2Pg.pm line 5221.
+according to this [issue](https://github.com/darold/ora2pg/issues/542)
+> You can not use data export (COPY) together with other export type. Commit [45fe50d](https://github.com/darold/ora2pg/commit/45fe50d9bfca9d4b56b66432c680f8fe95540cec) add a note about that in the documentation.
 
 
