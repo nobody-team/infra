@@ -10,21 +10,12 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 NAMESPACE = "."
 
 start_time = time.perf_counter()
-
-
-def die(msg):
-    """
-    show error message and exit with error
-    :param msg: message to record when exit
-    :return:
-    """
-    print("ERROR: {}".format(msg))
-    print("export_schema ends unsuccessfully in {}?".format(time.perf_counter() - start_time))
-    sys.exit(1)
+print("export_schema starts at: {}".format(str(datetime.now())))
 
 
 def call(cmd, confirm_msg, error_msg):
@@ -35,7 +26,7 @@ def call(cmd, confirm_msg, error_msg):
     :param error_msg: error message shown when unsuccessfully
     :return: exit_status
     """
-    if confirm(confirm_msg):
+    if (not confirm_msg) or confirm(confirm_msg):
         print("Running: {}".format(cmd))
         if not args.debug:
             status = os.system(cmd)
@@ -43,26 +34,11 @@ def call(cmd, confirm_msg, error_msg):
                 die(error_msg)
 
 
-def confirm(msg):
-    """
-    confirmation before execute
-    :return: result of confirm
-    """
-    if args.autorun:
-        return True
-    else:
-        if not msg:
-            msg = "Are you sure?"
-        response = input(msg + " [y/N/q] ")
-        if re.search('[yY][eE][sS]|[yY]', response):
-            return True
-        elif re.search('[qQ][uU][iI][tT]|[qQ]', response):
-            sys.exit()
-        else:
-            return False
-
-
-def exec_by_psql(import_file, confirm_msg, error_msg, single_transaction=False, user_postgres=False):
+def exec_by_psql(import_file,
+                 confirm_msg=None,
+                 error_msg=None,
+                 single_transaction=False,
+                 user_postgres=False):
     """
     use psql to import file
     :param import_file: relative path of the imported file under namespace
@@ -100,25 +76,6 @@ def exec_by_ora2pg(import_file):
             args.import_jobs, NAMESPACE, import_file))
 
 
-def perform_import(import_file, confirm_msg, error_msg, single_transaction=False, user_postgres=False):
-    """
-    import the give file
-    :param import_file: relative path of the imported file under namespace
-    :param confirm_msg: confirm message prompt before execution
-    :param error_msg: message shown when exit unsuccessfully
-    :return:
-    """
-    if os.path.exists("{0}/{1}".format(NAMESPACE, import_file)):
-        if confirm(confirm_msg):
-            if not args.import_jobs:
-                if not args.debug:
-                    exec_by_psql(import_file, single_transaction=single_transaction,
-                                 user_postgres=user_postgres)
-            else:
-                if not args.debug:
-                    exec_by_ora2pg(import_file)
-
-
 def exec_sql(sql, is_query=True):
     """
     execute in Postgre
@@ -136,6 +93,55 @@ def exec_sql(sql, is_query=True):
         return result.returncode
 
 
+def die(msg):
+    """
+    show error message and exit with error
+    :param msg: message to record when exit
+    :return:
+    """
+    print("ERROR: {}".format(msg))
+    print("export_schema ends unsuccessfully in {}?".format(time.perf_counter() - start_time))
+    sys.exit(1)
+
+
+def confirm(msg):
+    """
+    confirmation before execute
+    :return: result of confirm
+    """
+    if args.autorun:
+        return True
+    else:
+        if not msg:
+            msg = "Are you sure?"
+        response = input(msg + " [y/N/q] ")
+        if re.search('[yY][eE][sS]|[yY]', response):
+            return True
+        elif re.search('[qQ][uU][iI][tT]|[qQ]', response):
+            sys.exit()
+        else:
+            return False
+
+
+def perform_import(import_file, confirm_msg, error_msg, single_transaction=False, user_postgres=False):
+    """
+    import the give file
+    :param import_file: relative path of the imported file under namespace
+    :param confirm_msg: confirm message prompt before execution
+    :param error_msg: message shown when exit unsuccessfully
+    :return:
+    """
+    if os.path.exists("{0}/{1}".format(NAMESPACE, import_file)):
+        if confirm(confirm_msg):
+            if not args.import_jobs:
+                exec_by_psql(import_file,
+                             error_msg=error_msg,
+                             single_transaction=single_transaction,
+                             user_postgres=user_postgres)
+            else:
+                exec_by_ora2pg(import_file, error_msg=error_msg)
+
+
 def import_constraints():
     """
     Function used to import constraints and indexes
@@ -143,23 +149,26 @@ def import_constraints():
     """
     # indexes
     perform_import("schema/tables/INDEXES_table.sql",
-                   "Would you like to import indexes from $NAMESPACE/schema/tables/INDEXES_table.sql?",
+                   "Would you like to import indexes from {}/schema/tables/INDEXES_table.sql?".format(
+                       NAMESPACE),
                    "can not import indexes.")
 
     # constraints
     perform_import("schema/tables/CONSTRAINTS_table.sql",
-                   "Would you like to import constraints from $NAMESPACE/schema/tables/CONSTRAINTS_table.sql?",
+                   "Would you like to import constraints from {}/schema/tables/CONSTRAINTS_table.sql?".format(
+                       NAMESPACE),
                    "can not import constraints.")
 
     # foreign keys
     perform_import("schema/schema/tables/FKEYS_table.sql",
-                   "Would you like to import foreign keys from $NAMESPACE/schema/tables/FKEYS_table.sql?",
+                   "Would you like to import foreign keys from {}/schema/tables/FKEYS_table.sql?".format(
+                       NAMESPACE),
                    "can not import foreign keys.")
 
     # triggers
     perform_import("schema/triggers/trigger.sql",
-                   "Would you like to import TRIGGER from $NAMESPACE/schema/triggers/trigger.sql?",
-                   "an error occurs when importing file $NAMESPACE/schema/triggers/trigger.sql.",
+                   "Would you like to import TRIGGER from {}/schema/triggers/trigger.sql?".format(NAMESPACE),
+                   "an error occurs when importing file {}/schema/triggers/trigger.sql.".format(NAMESPACE),
                    single_transaction=True)
 
 
@@ -170,70 +179,51 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(
         description='Script used to load exported sql files into PostgreSQL in practical manner')
-    parser.add_argument('-a', action='store_true',
-                        dest='data_only',
+    parser.add_argument('-a', action='store_true', dest='data_only',
                         default=False,
                         help="import data only")
-    parser.add_argument('-b', action='store',
-                        dest='sql_post_script',
+    parser.add_argument('-b', action='store', dest='sql_post_script',
                         help="SQL script to execute just after table creation to fix database schema")
-    parser.add_argument('-d', action='store',
-                        dest='db_name',
+    parser.add_argument('-d', action='store', dest='db_name',
                         help="database name for import")
-    parser.add_argument('-D', action='store_true',
-                        dest='debug',
+    parser.add_argument('-D', action='store_true', dest='debug',
                         default=False,
                         help="enable debug mode, will only show what will be done")
-    parser.add_argument('-e', action='store',
-                        dest='db_encoding',
+    parser.add_argument('-e', action='store', dest='db_encoding',
                         help="database encoding to use at creation (default: UTF8)")
-    parser.add_argument('-f', action='store_true',
-                        dest='no_dbcheck',
+    parser.add_argument('-f', action='store_true', dest='no_dbcheck',
                         default=False,
                         help="force no check of user and database existing and do not try to create them")
-    parser.add_argument('-h', action='store',
-                        dest='db_host',
+    parser.add_argument('-h', action='store', dest='db_host',
                         help="hostname of the PostgreSQL server (default: unix socket)")
-    parser.add_argument('-i', action='store_true',
-                        dest='constraints_only',
+    parser.add_argument('-i', action='store_true', dest='constraints_only',
                         default=False,
                         help="only load indexes, constraints and triggers")
-    parser.add_argument('-I', action='store_true',
-                        dest='no_constraints',
+    parser.add_argument('-I', action='store_true', dest='no_constraints',
                         default=False,
                         help="do not try to load indexes, constraints and triggers")
-    parser.add_argument('-j', action='store',
-                        dest='import_jobs',
+    parser.add_argument('-j', action='store', dest='import_jobs',
                         help="number of connection to use to import data or indexes into PostgreSQL")
-    parser.add_argument('-n', action='store',
-                        dest='db_schema',
+    parser.add_argument('-n', action='store', dest='db_schema',
                         help="comma separated list of schema to create")
-    parser.add_argument('-o', action='store',
-                        dest='db_owner',
+    parser.add_argument('-o', action='store', dest='db_owner',
                         help="owner of the database to create")
-    parser.add_argument('-p', action='store',
-                        dest='db_port',
+    parser.add_argument('-p', action='store', dest='db_port',
                         help="listening port of the PostgreSQL server (default: 5432)")
-    parser.add_argument('-P', action='store',
-                        dest='parallel_tables',
+    parser.add_argument('-P', action='store', dest='parallel_tables',
                         help="number of tables to process at same time for data import")
-    parser.add_argument('-s', action='store_true',
-                        dest='schema_only',
+    parser.add_argument('-s', action='store_true', dest='schema_only',
                         default=False,
                         help="import schema only, do not try to import data")
-    parser.add_argument('-t', action='store',
-                        dest='export_type',
+    parser.add_argument('-t', action='store', dest='export_type',
                         default="TYPE,TABLE,PACKAGE,VIEW,GRANT,SEQUENCE,TRIGGER,FUNCTION,PROCEDURE,TABLESPACE,PARTITION,MVIEW,DBLINK,SYNONYM,DIRECTORY",
                         help="comma separated list of export type to import (same as ora2pg)")
-    parser.add_argument('-U', action='store',
-                        dest='db_user',
+    parser.add_argument('-U', action='store', dest='db_user',
                         help="username to connect to PostgreSQL (default: peer username)")
-    parser.add_argument('-x', action='store_true',
-                        dest='import_indexes_after',
+    parser.add_argument('-x', action='store_true', dest='import_indexes_after',
                         default=False,
                         help="import indexes and constraints after data")
-    parser.add_argument('-y', action='store_true',
-                        dest='autorun',
+    parser.add_argument('-y', action='store_true', dest='autorun',
                         default=False,
                         help="reply Yes to all questions for automatic import")
 
@@ -409,4 +399,5 @@ if __name__ == "__main__":
             if args.import_indexes_after:
                 import_constraints()
 
-print("export_schema ends successfully in {}?".format(time.perf_counter() - start_time))
+print("export_schema ends successfully in {}s at {}?".format(
+    (time.perf_counter() - start_time) / 60, str(datetime.now())))
