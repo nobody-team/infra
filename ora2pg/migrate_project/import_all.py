@@ -18,13 +18,14 @@ start_time = time.perf_counter()
 print("export_schema starts at: {}".format(str(datetime.now())))
 
 
-def call(cmd, confirm_msg, error_msg):
+def call(cmd, confirm_msg, error_msg, callback=None):
     """
     call system batch
     :param cmd: command to be execute
     :param confirm_msg: confirm message prompt before execution
     :param error_msg: error message shown when unsuccessfully
-    :return: exit_status
+    :param callback: execution callback
+    :return: None
     """
     if (not confirm_msg) or confirm(confirm_msg):
         print("Running: {}".format(cmd))
@@ -32,6 +33,8 @@ def call(cmd, confirm_msg, error_msg):
             status = os.system(cmd)
             if status != 0:
                 die(error_msg)
+        if callback:
+            callback()
 
 
 def exec_by_psql(import_file,
@@ -46,34 +49,40 @@ def exec_by_psql(import_file,
     :param error_msg: error message when unsuccessfully
     :param single_transaction: whether add --single-transaction or not
     :param user_postgres: execute with user postgres
-    :return: exit_status
+    :return: None
     """
     user = 'postgres' if user_postgres else args.db_owner
 
     if single_transaction:
-        return call(
+        call(
             "psql --single-transaction -h {0} -p {1} -U {2} -d {3} -f {4}/{5}".format(
                 args.db_host, args.db_port, user, args.db_name, NAMESPACE, import_file),
             confirm_msg,
             error_msg)
 
     else:
-        return call(
+        call(
             "psql -h {0} -p {1} -U {2} -d {3} -f {4}/{5}".format(
                 args.db_host, args.db_port, user, args.db_name, NAMESPACE, import_file),
             confirm_msg,
             error_msg)
 
 
-def exec_by_ora2pg(import_file):
+def exec_by_ora2pg(import_file,
+                   confirm_msg=None,
+                   error_msg=None):
     """
     use ora2pg to import file
     :param import_file: relative path of the imported file under namespace
-    :return: exit_status
+    :param confirm_msg: confirm message prompt
+    :param error_msg: error message shown when fails
+    :return: None
     """
-    return call(
+    call(
         "ora2pg -j {0} -c config/ora2pg.conf -t LOAD -i {1}/{2}".format(
-            args.import_jobs, NAMESPACE, import_file))
+            args.import_jobs, NAMESPACE, import_file),
+        confirm_msg,
+        error_msg)
 
 
 def exec_sql(sql, is_query=True):
@@ -81,7 +90,7 @@ def exec_sql(sql, is_query=True):
     execute in Postgre
     :param sql: sql to execute
     :param is_query: whether is query or execution
-    :return: execute result
+    :return: execute result for query or exit code for execution
     """
     if is_query:
         result = subprocess.run(["psql -h {0} -p {1} -U {2} -d {3} -Atc \"{4}\"".format(
@@ -100,14 +109,15 @@ def die(msg):
     :return:
     """
     print("ERROR: {}".format(msg))
-    print("export_schema ends unsuccessfully in {}?".format(time.perf_counter() - start_time))
+    print("export_schema ends successfully in {}s at {}?".format(
+        (time.perf_counter() - start_time) / 60, str(datetime.now())))
     sys.exit(1)
 
 
 def confirm(msg):
     """
     confirmation before execute
-    :return: result of confirm
+    :return: True for agree to proceed, False for reject, or quit directly
     """
     if args.autorun:
         return True
@@ -123,17 +133,25 @@ def confirm(msg):
             return False
 
 
-def perform_import(import_file, confirm_msg, error_msg, single_transaction=False, user_postgres=False):
+def perform_import_file(import_file,
+                        confirm_msg,
+                        error_msg,
+                        import_jobs,
+                        single_transaction=False,
+                        user_postgres=False):
     """
     import the give file
     :param import_file: relative path of the imported file under namespace
     :param confirm_msg: confirm message prompt before execution
     :param error_msg: message shown when exit unsuccessfully
+    :param import_jobs: number of jobs used to import by ora2pg
+    :param single_transaction whether to add --single_transaction for psql command
+    :param user_postgres: whether to use postgres as the user or use the args.db_owner
     :return:
     """
     if os.path.exists("{0}/{1}".format(NAMESPACE, import_file)):
         if confirm(confirm_msg):
-            if not args.import_jobs:
+            if not import_jobs:
                 exec_by_psql(import_file,
                              error_msg=error_msg,
                              single_transaction=single_transaction,
@@ -142,34 +160,41 @@ def perform_import(import_file, confirm_msg, error_msg, single_transaction=False
                 exec_by_ora2pg(import_file, error_msg=error_msg)
 
 
-def import_constraints():
+def import_constraints(import_jobs):
     """
     Function used to import constraints and indexes
+    :param import_jobs: number of jobs used by ora2pg
     :return:
     """
     # indexes
-    perform_import("schema/tables/INDEXES_table.sql",
-                   "Would you like to import indexes from {}/schema/tables/INDEXES_table.sql?".format(
-                       NAMESPACE),
-                   "can not import indexes.")
+    perform_import_file("schema/tables/INDEXES_table.sql",
+                        "Would you like to import indexes from {}/schema/tables/INDEXES_table.sql?".format(
+                            NAMESPACE),
+                        "can not import indexes.",
+                        import_jobs=import_jobs)
 
     # constraints
-    perform_import("schema/tables/CONSTRAINTS_table.sql",
-                   "Would you like to import constraints from {}/schema/tables/CONSTRAINTS_table.sql?".format(
-                       NAMESPACE),
-                   "can not import constraints.")
+    perform_import_file("schema/tables/CONSTRAINTS_table.sql",
+                        "Would you like to import constraints from {}/schema/tables/CONSTRAINTS_table.sql?".format(
+                            NAMESPACE),
+                        "can not import constraints.",
+                        import_jobs=import_jobs)
 
     # foreign keys
-    perform_import("schema/schema/tables/FKEYS_table.sql",
-                   "Would you like to import foreign keys from {}/schema/tables/FKEYS_table.sql?".format(
-                       NAMESPACE),
-                   "can not import foreign keys.")
+    perform_import_file("schema/schema/tables/FKEYS_table.sql",
+                        "Would you like to import foreign keys from {}/schema/tables/FKEYS_table.sql?".format(
+                            NAMESPACE),
+                        "can not import foreign keys.",
+                        import_jobs=import_jobs)
 
     # triggers
-    perform_import("schema/triggers/trigger.sql",
-                   "Would you like to import TRIGGER from {}/schema/triggers/trigger.sql?".format(NAMESPACE),
-                   "an error occurs when importing file {}/schema/triggers/trigger.sql.".format(NAMESPACE),
-                   single_transaction=True)
+    perform_import_file("schema/triggers/trigger.sql",
+                        "Would you like to import TRIGGER from {}/schema/triggers/trigger.sql?".format(
+                            NAMESPACE),
+                        "an error occurs when importing file {}/schema/triggers/trigger.sql.".format(
+                            NAMESPACE),
+                        import_jobs=import_jobs,
+                        single_transaction=True)
 
 
 def parse_args():
@@ -252,9 +277,9 @@ if __name__ == "__main__":
         die("project directory '{}' is not valid or is not readable.".format(NAMESPACE))
 
     # If constraints and indexes files are present propose to import these object
-    if args.constraints_only == 1:
+    if args.constraints_only:
         if confirm("Would you like to load indexes, constraints and triggers?"):
-            import_constraints()
+            import_constraints(args.import_jobs)
         sys.exit(0)
 
     # When a PostgreSQL schema list is provided, create them
@@ -297,29 +322,28 @@ if __name__ == "__main__":
                     "createdb -h {} -p {} -U {} -E {} --owner {} {}".format(
                         args.db_host, args.db_port, args.db_user,
                         args.db_encoding, args.db_owner, args.db_name),
-                    "Would you like to create the database {}?".format(args.db_name),
-                    "can not create database {}.".format(args.db_name))
+                    confirm_msg=None,
+                    error_msg="can not create database {}.".format(args.db_name))
 
         # When schema list is provided, create them
         if args.db_schema:
             nspace_list = []
             for enspace in args.db_schema.split(','):
                 lnspace = enspace.trim().lower()
-                if confirm("Would you like to create schema {} in database {}?".format(
-                        lnspace, args.db_name)):
-                    if not args.debug:
-                        exit_status = exec_sql("CREATE SCHEMA {};".format(lnspace), is_query=False)
-                        if exit_status != 0:
-                            die("can not create schema {}.".format(lnspace))
-                    nspace_list.append(lnspace)
+
+                call("psql -h {0} -p {1} -U {2} -d {3} -c \"CREATE SCHEMA {4};\"".format(
+                    args.db_host, args.db_port, args.db_user, args.db_name, lnspace),
+                    "Would you like to create schema {} in database {}?".format(lnspace, args.db_name),
+                    "can not create schema {}.".format(lnspace),
+                    callback=lambda: nspace_list.append(lnspace))
+
             if nspace_list:
-                if confirm("Would you like to change search_path of the database owner?"):
-                    if not args.debug:
-                        exit_status = exec_sql("ALTER ROLE {} SET search_path TO {},public;".format(
-                            args.db_owner,
-                            ','.join(nspace_list)), is_query=False)
-                        if exit_status != 0:
-                            die("can not change search_path.")
+                call(
+                    "psql -h {0} -p {1} -U {2} -d {3} -c \"ALTER ROLE {4} SET search_path TO {5},public;\"".format(
+                        args.db_host, args.db_port, args.db_user, args.db_name, args.db_owner,
+                        ','.join(nspace_list)),
+                    "Would you like to change search_path of the database owner?",
+                    "can not change search_path.")
 
         # Then import all files from project directory
         for etype in args.export_type:
@@ -329,12 +353,16 @@ if __name__ == "__main__":
                 continue
             ltype = etype.lower()
             ltype = re.sub(r'y$', 'ie', ltype)
-            exec_by_psql("schema/{0}s/{0}.sql".format(ltype),
-                         "Would you like to import $etype from {0}/schema/{1}s/{1}.sql?".format(
-                             NAMESPACE, ltype),
-                         "an error occurs when importing file {0}/schema/{1}s/{1}.sql?".format(
-                             NAMESPACE, ltype),
-                         single_transaction=True)
+
+            perform_import_file("schema/{0}s/{0}.sql".format(ltype),
+                                "Would you like to import $etype from {0}/schema/{1}s/{1}.sql?".format(
+                                    NAMESPACE,
+                                    ltype),
+                                "an error occurs when importing file {0}/schema/{1}s/{1}.sql?".format(
+                                    NAMESPACE,
+                                    ltype),
+                                import_jobs=None,
+                                single_transaction=True)
 
             if args.sql_post_script and etype == "TABLE":
                 exec_by_psql(args.sql_post_script,
@@ -346,21 +374,25 @@ if __name__ == "__main__":
         if not args.no_constraints and not args.import_indexes_after:
             if confirm("Would you like to process indexes and constraints before loading data?"):
                 args.import_indexes_after = False
-                import_constraints()
+                import_constraints(args.import_jobs)
             else:
                 args.import_indexes_after = True
 
         # Import objects that need superuser priviledge: GRANT and TABLESPACE
-        exec_by_psql("schema/grants/grant.sql",
-                     "Would you like to import GRANT from {}/schema/grants/grant.sql?".format(NAMESPACE),
-                     "an error occurs when importing file {}/schema/grants/grant.sql.".format(NAMESPACE),
-                     user_postgres=True)
-        exec_by_psql("schema/tablespaces/tablespace.sql",
-                     "Would you like to import TABLESPACE from {}/schema/tablespaces/tablespace.sql?".format(
-                         NAMESPACE),
-                     "an error occurs when importing file {}/schema/tablespaces/tablespace.sql.".format(
-                         NAMESPACE),
-                     user_postgres=True)
+        perform_import_file("schema/grants/grant.sql",
+                            "Would you like to import GRANT from {}/schema/grants/grant.sql?".format(
+                                NAMESPACE),
+                            "an error occurs when importing file {}/schema/grants/grant.sql.".format(
+                                NAMESPACE),
+                            import_jobs=None,
+                            user_postgres=True)
+        perform_import_file("schema/tablespaces/tablespace.sql",
+                            "Would you like to import TABLESPACE from {}/schema/tablespaces/tablespace.sql?".format(
+                                NAMESPACE),
+                            "an error occurs when importing file {}/schema/tablespaces/tablespace.sql.".format(
+                                NAMESPACE),
+                            import_jobs=None,
+                            user_postgres=True)
 
     # Check if we must just import schema or proceed to data import too
     if not args.schema_only:
@@ -371,8 +403,10 @@ if __name__ == "__main__":
                     pgdsn_defined = re.sub(r'.*dbi:Pg', 'dbi:Pg', line)
                     if not pgdsn_defined:
                         if args.db_host:
-                            pgdsn_defined = "dbi:Pg:dbname={0};host={1}".format(args.db_name, args.db_host)
+                            pgdsn_defined = "dbi:Pg:dbname={0};host={1}".format(args.db_name,
+                                                                                args.db_host)
                         else:
+                            # default to unix socket
                             pgdsn_defined = "dbi:Pg:dbname={};".format(args.db_name)
                     break
 
@@ -397,7 +431,7 @@ if __name__ == "__main__":
 
         if not args.no_constraints and not args.data_only:
             if args.import_indexes_after:
-                import_constraints()
+                import_constraints(args.import_jobs)
 
-print("export_schema ends successfully in {}s at {}?".format(
-    (time.perf_counter() - start_time) / 60, str(datetime.now())))
+    print("export_schema ends successfully in {}s at {}?".format(
+        (time.perf_counter() - start_time) / 60, str(datetime.now())))
