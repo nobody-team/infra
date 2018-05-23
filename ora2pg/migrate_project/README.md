@@ -16,3 +16,6 @@ for root, dirs, files in os.walk('.'):
         print(os.path.join(root, d))
         open(os.path.join(root, d, '.gitkeep'), 'w')
 ```
+
+## Prerequisite
+* Python3
