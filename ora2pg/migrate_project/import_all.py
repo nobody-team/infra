@@ -3,8 +3,11 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 NAMESPACE = "."
+
+start_time = time.perf_counter()
 
 
 def die(msg):
@@ -14,6 +17,7 @@ def die(msg):
     :return:
     """
     print("ERROR: {}".format(msg))
+    print("export_schema ends unsuccessfully in {}?".format(time.perf_counter() - start_time))
     sys.exit(1)
 
 
@@ -398,3 +402,5 @@ if __name__ == "__main__":
         if not args.no_constraints and not args.data_only:
             if args.import_indexes_after:
                 import_constraints()
+
+print("export_schema ends successfully in {}?".format(time.perf_counter() - start_time))

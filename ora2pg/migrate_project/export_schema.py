@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 EXPORT_TYPE = [
     "TABLE",
@@ -31,6 +32,8 @@ SOURCE_TYPE = [
 ]
 
 namespace = '.'
+
+start_time = time.perf_counter()
 
 
 def call(cmd):
@@ -88,3 +91,5 @@ if __name__ == "__main__":
 
     # To extract data use the following command:
     call("ora2pg -t COPY -o data.sql -b {0}/data -c {0}/config/ora2pg.conf".format(namespace))
+
+print("export_schema ends successfully in {}?".format(time.perf_counter() - start_time))
