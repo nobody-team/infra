@@ -1,3 +1,9 @@
+# ---------------------------------------------------------
+#
+# Python translation of the original export_schema.sh
+#
+# ---------------------------------------------------------
+
 import os
 import re
 import time

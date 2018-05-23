@@ -1,3 +1,9 @@
+# ---------------------------------------------------------
+#
+# Python translation of the original import_all.sh
+#
+# ---------------------------------------------------------
+
 import argparse
 import os
 import re
