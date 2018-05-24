@@ -2,10 +2,19 @@
 This document explains how to migrate data from Oracle to PostgreSQL.
 
 ## How to Execute
-* Eenerate project folder by `ora2pg --init_project migrate_project`
+* Generate project folder by `ora2pg --init_project migrate_project`
 * Override the generated folder with contents within [migrate_project](migrate_project) 
 * Update the configure file at [migrate_project/config/ora2pg.conf](migrate_project/config/ora2pg.conf)
+* Change the client authentication in file `POSTGRE_INSTALL/data/pg_hba.conf` to `trust`, like:
+
+|TYPE|DATABASE|USER|ADDRESS|METHOD|
+|:--:|:------:|:--:|:-----:|:----:|
+|host|all|all|127.0.0.1/32|trust|
+    
 * Export schema by executing: [migrate_project/export_schema.py](migrate_project/export_schema.py)
+* Change the path of tablespace in [migrate_project/schema/tablespaces/tablespace.sql](migrate_project/schema/tablespaces/tablespace.sql)
+* Change user password in [migrate_project/schema/grants/grant.sql](migrate_project/schema/grants/grant.sql)
+* Change directories in [migrate_project/schema/directories/directorie.sql](migrate_project/schema/directories/directorie.sql)
 * Import all exported data by executing: [migrate_project/import_all.py](migrate_project/import_all.py)
 
 > For more usage, please refer to [ora2pg documentation](https://ora2pg.darold.net/documentation.html).
