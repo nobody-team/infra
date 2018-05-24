@@ -60,6 +60,7 @@ def remove_empty_file(file_path):
     :param file_path: path of file to be removed
     :return: None
     """
+    print("Check whether empty file: {}".format(file_path))
     if os.path.exists(file_path):
         is_empty = False
         with open(file_path) as f:
@@ -100,5 +101,5 @@ if __name__ == "__main__":
     # To extract data use the following command:
     call("ora2pg -t COPY -o data.sql -b {0}/data -c {0}/config/ora2pg.conf".format(namespace))
 
-print("export_schema ends successfully in {}s at {}?".format(
+print("export_schema ends successfully in {}min at {}?".format(
     (time.perf_counter() - start_time) / 60, str(datetime.now())))
