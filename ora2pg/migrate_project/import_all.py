@@ -15,7 +15,7 @@ from datetime import datetime
 NAMESPACE = "."
 
 start_time = time.perf_counter()
-print("export_schema starts at: {}".format(str(datetime.now())))
+print("import_all starts at: {}".format(str(datetime.now())))
 
 
 def call(cmd, confirm_msg, error_msg, callback=None):
@@ -93,8 +93,15 @@ def exec_sql(sql, is_query=True):
     :return: execute result for query or exit code for execution
     """
     if is_query:
-        result = subprocess.run(["psql -h {0} -p {1} -U {2} -d {3} -Atc \"{4}\"".format(
-            args.db_host, args.db_port, args.db_user, args.db_name, sql)], stdout=subprocess.PIPE)
+        result = subprocess.run(
+            ['psql',
+             '-h', '{}'.format(args.db_host),
+             '-p', '{}'.format(args.db_port),
+             '-U', '{}'.format(args.db_user),
+             '-d', '{}'.format(args.db_name),
+             '-Atc', '{}'.format(sql)],
+            stdout=subprocess.PIPE)
+        print(result.args)
         return result.stdout
     else:
         result = subprocess.run(["psql -h {0} -p {1} -U {2} -d {3} -c \"{4}\"".format(
@@ -109,7 +116,7 @@ def die(msg):
     :return:
     """
     print("ERROR: {}".format(msg))
-    print("export_schema ends successfully in {}s at {}?".format(
+    print("export_schema fails in {}min at {}?".format(
         (time.perf_counter() - start_time) / 60, str(datetime.now())))
     sys.exit(1)
 
@@ -203,7 +210,8 @@ def parse_args():
     :return: the arg object
     """
     parser = argparse.ArgumentParser(
-        description='Script used to load exported sql files into PostgreSQL in practical manner')
+        description='Script used to load exported sql files into PostgreSQL in practical manner',
+        add_help=False)
     parser.add_argument('-a', action='store_true', dest='data_only',
                         default=False,
                         help="import data only")
@@ -315,21 +323,20 @@ if __name__ == "__main__":
                     "dropdb -h {} -p {} -U {} {}".format(
                         args.db_host, args.db_port, args.db_user, args.db_name),
                     "Would you like to drop the database {} before recreate it?".format(args.db_name),
-                    "can not drop database {}.".format(args.db_name)
-
+                    "can not drop database {}.".format(args.db_name),
+                    callback=lambda: call(
+                        "createdb -h {} -p {} -U {} -E {} --owner {} {}".format(
+                            args.db_host, args.db_port, args.db_user,
+                            args.db_encoding, args.db_owner, args.db_name),
+                        confirm_msg=None,
+                        error_msg="can not create database {}.".format(args.db_name))
                 )
-                call(
-                    "createdb -h {} -p {} -U {} -E {} --owner {} {}".format(
-                        args.db_host, args.db_port, args.db_user,
-                        args.db_encoding, args.db_owner, args.db_name),
-                    confirm_msg=None,
-                    error_msg="can not create database {}.".format(args.db_name))
 
         # When schema list is provided, create them
         if args.db_schema:
             nspace_list = []
             for enspace in args.db_schema.split(','):
-                lnspace = enspace.trim().lower()
+                lnspace = enspace.strip().lower()
 
                 call("psql -h {0} -p {1} -U {2} -d {3} -c \"CREATE SCHEMA {4};\"".format(
                     args.db_host, args.db_port, args.db_user, args.db_name, lnspace),
@@ -346,7 +353,7 @@ if __name__ == "__main__":
                     "can not change search_path.")
 
         # Then import all files from project directory
-        for etype in args.export_type:
+        for etype in args.export_type.split(','):
             if args.no_constraints and etype == "TRIGGER":
                 continue
             if etype == "GRANT" or etype == "TABLESPACE":
@@ -355,9 +362,10 @@ if __name__ == "__main__":
             ltype = re.sub(r'y$', 'ie', ltype)
 
             perform_import_file("schema/{0}s/{0}.sql".format(ltype),
-                                "Would you like to import $etype from {0}/schema/{1}s/{1}.sql?".format(
+                                "Would you like to import {2} from {0}/schema/{1}s/{1}.sql?".format(
                                     NAMESPACE,
-                                    ltype),
+                                    ltype,
+                                    etype),
                                 "an error occurs when importing file {0}/schema/{1}s/{1}.sql?".format(
                                     NAMESPACE,
                                     ltype),
@@ -433,5 +441,5 @@ if __name__ == "__main__":
             if args.import_indexes_after:
                 import_constraints(args.import_jobs)
 
-    print("export_schema ends successfully in {}s at {}?".format(
+    print("export_schema success in {}min at {}?".format(
         (time.perf_counter() - start_time) / 60, str(datetime.now())))
