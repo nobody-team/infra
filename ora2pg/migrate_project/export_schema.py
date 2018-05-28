@@ -60,10 +60,10 @@ def remove_empty_file(file_path):
     :param file_path: path of file to be removed
     :return: None
     """
-    print("Check whether empty file: {}".format(file_path))
+    print("Check whether file is empty: {}".format(file_path))
     if os.path.exists(file_path):
         is_empty = False
-        with open(file_path) as f:
+        with open(file_path, encoding="utf8") as f:
             line = f.readline()
             if re.search('Nothing found', line):
                 is_empty = True
