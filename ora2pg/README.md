@@ -12,12 +12,17 @@ This document explains how to migrate data from Oracle to PostgreSQL.
 |host|all|all|127.0.0.1/32|trust|
     
 * Export schema by executing: [migrate_project/export_schema.py](migrate_project/export_schema.py)
-* Change the path of tablespace in [migrate_project/schema/tablespaces/tablespace.sql](migrate_project/schema/tablespaces/tablespace.sql)
 * Change user password in [migrate_project/schema/grants/grant.sql](migrate_project/schema/grants/grant.sql)
+* Execute the `CREATE USER` statement and remove them from [migrate_project/schema/grants/grant.sql](migrate_project/schema/grants/grant.sql)
+* Change the path of tablespace in [migrate_project/schema/tablespaces/tablespace.sql](migrate_project/schema/tablespaces/tablespace.sql)
+* Execute the `CREATE TABLESPACE`/`ALTER TABLESPACE` statement and remove them from [migrate_project/schema/tablespaces/tablespace.sql](migrate_project/schema/tablespaces/tablespace.sql)
 * Change directories in [migrate_project/schema/directories/directorie.sql](migrate_project/schema/directories/directorie.sql)
+* Check Oracle type conversion, like `NVARCHAR2`(`TEXT`), in [migrate_project/schema/packages/package.sql](migrate_project/schema/packages/package.sql)
 * Import all exported data by executing: [migrate_project/import_all.py](migrate_project/import_all.py)
 
-> For more usage, please refer to [ora2pg documentation](https://ora2pg.darold.net/documentation.html).
+> * For more usage, please refer to [ora2pg documentation](https://ora2pg.darold.net/documentation.html).
+> * Since there are no packages in PostgreSQL, there are no package-level variables either. Instead of packages, use schemas to organize your functions into groups.
+> 
 
 ## Environment
 
@@ -174,4 +179,77 @@ change the transaction setting in `ora2pg_dist.conf`
 according to this [issue](https://github.com/darold/ora2pg/issues/542)
 > You can not use data export (COPY) together with other export type. Commit [45fe50d](https://github.com/darold/ora2pg/commit/45fe50d9bfca9d4b56b66432c680f8fe95540cec) add a note about that in the documentation.
 
+#### Oracle Syntax: `IS TABLE OF`
+Usually the statement looks like: 
+```
+TYPE workdays IS TABLE OF DATE
+```
 
+In order to translate, we need to find the equivalent type in PostgreSQL, like `timestamp`.
+This statement can be translated as: 
+
+```sql
+workdays timestamp[];
+```
+the way to access should also change from `workdays(idx)` to `workdays[idx]` 
+
+#### Oracle Syntax: `IS RECORD`
+Usually the statement looks like: 
+```sql
+TYPE payinfo IS RECORD(
+    payment     Date,
+    remark      VARCHAR
+    );
+```
+This statement can be translated as: 
+```sql
+CREATE TYPE payinfo AS (
+    paydate   timestamp,
+    remark    text
+    );
+```
+
+#### Oracle Syntax: `CURSOR FOR`
+Usually the statement looks like: 
+```sql
+xyz CURSOR FOR select * from address ad
+                        join city ct on ad.city_id = ct.city_id;    
+xyz_row xyz;
+```
+Just need to change:
+```sql
+xyz_row RECORD;
+```
+> @see: https://stackoverflow.com/questions/22339628/cursor-based-records-in-postgresql
+
+#### Oracle Syntax: `CURSOR XXX IS`
+use
+```sql
+XXX CURSOR FOR
+```
+
+#### Oracle Syntax: `dbms_sql`
+> @see: [Executing Dynamic Commands](https://www.postgresql.org/docs/8.3/static/plpgsql-statements.html#PLPGSQL-STATEMENTS-EXECUTING-DYN)
+
+#### ERROR:  syntax error at or near "BEGIN"
+The PostgreSQL does not supported nested FUNCTION. 
+In this case, need to handle/convert manually.
+
+#### ERROR:  functions cannot have more than 100 arguments
+This is a known limitation and it's very difficult to change since the limitation is baked very deeply into the existing catalog structure.
+Some options/workarounds available to overcome this is:
+* Use arrays rather than individual arguments
+* Use record data-types to the functions rather than individual arguments
+
+> @see: [Function Fails with "ERROR: functions cannot have more than 100 arguments"](https://discuss.pivotal.io/hc/en-us/articles/204396563-Function-Fails-with-ERROR-functions-cannot-have-more-than-100-arguments-)
+
+#### ERROR:  column "rowid" does not exist
+There is `ctid` column which is equivalent for rowid.
+
+> @see: [5.4. System Columns](https://www.postgresql.org/docs/current/static/ddl-system-columns.html)
+
+
+## Reference
+* [Oracle to PostgreSQL Migration](http://www.sqlines.com/oracle-to-postgresql)
+* [Porting from Oracle PL/SQL](https://www.postgresql.org/docs/9.6/static/plpgsql-porting.html)
+* [Porting from Oracle to PostgreSQL](https://www.cs.cmu.edu/~pmerson/docs/OracleToPostgres.pdf)
