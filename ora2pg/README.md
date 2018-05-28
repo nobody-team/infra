@@ -118,31 +118,6 @@ Please update following configurations based on your system:
 |TRUNCATE_TABLE|1|Add a TRUNCATE TABLE instruction before loading data on COPY and INSERT export|
 |FILE_PER_FKEYS|1|Export foreign key declaration to be saved in a separate file. convenient for importing through file|
 
-## Initialize 
-
-
-## Migration
-* use intermediate file to migrate(if `PG_DSN` is not set)
-	- export data and table DDL
-		```
-		ora2pg -d -c C:\ora2pg\ora2pg_dist.conf -b D:\Conversion\migration -t COPY -o data.sql
-		```
-		this will generate 3 files in `D:\Conversion\migration`:
-		* output.sql: table DDL
-		* data.sql: data of each tables
-		* FKEYS_output.sql: foreign keys(if FILE_PER_FKEYS is set to 1)
-	- import into Postgre(pay attention to the path separator in Windows)
-		```
-		\i D:/Conversion\migration/output.sql
-		\i D:/Conversion\migration/data.sql
-		\i D:/Conversion\migration/FKEYS_output.sql
-		```
-
-* migrate from Oracle to PostgreSQL directly(if `PG_DSN` is set)
-	```
-	ora2pg -d -c C:\ora2pg\ora2pg_dist.conf -l D:\Conversion\migration\ora2pg.log
-	```
-
 #### Why ActiveState Perl
 
 As mentioned in the [README](https://github.com/darold/ora2pg) of ora2pg:
