@@ -18,7 +18,7 @@ This document explains how to migrate data from Oracle to PostgreSQL.
 * Execute the `CREATE TABLESPACE`/`ALTER TABLESPACE` statement and remove them from [migrate_project/schema/tablespaces/tablespace.sql](migrate_project/schema/tablespaces/tablespace.sql)
 * Change directories in [migrate_project/schema/directories/directorie.sql](migrate_project/schema/directories/directorie.sql)
 * Check Oracle type conversion, like `NVARCHAR2`(`TEXT`), in [migrate_project/schema/packages/package.sql](migrate_project/schema/packages/package.sql)
-* Import all exported data by executing: [migrate_project/import_all.py](migrate_project/import_all.py)
+* Import all exported data by executing: [migrate_project/import_all.py](migrate_project/import_all.py) with parameter `-d cp06 -h 127.0.0.1 -p 5432 -U postgres -o postgres`
 
 > * For more usage, please refer to [ora2pg documentation](https://ora2pg.darold.net/documentation.html).
 > * Since there are no packages in PostgreSQL, there are no package-level variables either. Instead of packages, use schemas to organize your functions into groups.
@@ -228,3 +228,4 @@ There is `ctid` column which is equivalent for rowid.
 * [Oracle to PostgreSQL Migration](http://www.sqlines.com/oracle-to-postgresql)
 * [Porting from Oracle PL/SQL](https://www.postgresql.org/docs/9.6/static/plpgsql-porting.html)
 * [Porting from Oracle to PostgreSQL](https://www.cs.cmu.edu/~pmerson/docs/OracleToPostgres.pdf)
+* [Migrating from oracle to postgresql with ora2pg](https://blog.dbi-services.com/migrating-from-oracle-to-postgresql-with-ora2pg/)
