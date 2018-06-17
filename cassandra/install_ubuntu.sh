@@ -16,13 +16,11 @@ java -version
 #
 ###################
 
-echo "deb http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-echo "deb-src http://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
-gpg --keyserver pgp.mit.edu --recv-keys F758CE318D77295D
-gpg --export --armor F758CE318D77295D | sudo apt-key add -
-gpg --keyserver pgp.mit.edu --recv-keys 2B5C1B00
-gpg --export --armor 2B5C1B00 | sudo apt-key add -
-pg --keyserver pgp.mit.edu --recv-keys 0353B12C
-gpg --export --armor 0353B12C | sudo apt-key add -
+echo "deb http://www.apache.org/dist/cassandra/debian 311x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
+curl https://www.apache.org/dist/cassandra/KEYS | sudo apt-key add -
+# for error:GPG error: http://www.apache.org 311x InRelease: The following signatures couldn't be verified because the public key is not available: NO_PUBKEY A278B781FE4B2BDA
+#sudo apt-key adv --keyserver pool.sks-keyservers.net --recv-key A278B781FE4B2BDA
 sudo apt-get update
 sudo apt-get install cassandra -y
+sudo systemctl enable cassandra.service
+sudo systemctl start cassandra.service
